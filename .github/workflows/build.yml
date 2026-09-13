@@ -3,7 +3,184 @@ name: Build Sayeha Pars
 on:
   push:
     branches: [main, master]
+  pull_request:name: Build Sayeha Pars
+
+on:
+  push:
+    branches: [main, master]
   pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+env:
+  GODOT_VERSION: "4.3-stable"
+  GODOT_VERSION_DIR: "4.3.stable"
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check structure
+        run: |
+          test -f project.godot
+          test -f scenes/main.tscn
+          test -f scenes/player.tscn
+          test -f scenes/enemy.tscn
+          test -f scripts/game_manager.gd
+          test -f scripts/world_gen.gd
+          test -f scripts/player.gd
+          test -f scripts/enemy.gd
+          test -f scripts/quest_system.gd
+          test -f export_presets.cfg
+          test -f shaders/terrain_pbr.gdshader
+          echo "OK — project files present"
+
+  windows:
+    name: Windows export
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
+      - name: Install Godot + templates
+        run: |
+          set -e
+          mkdir -p "$HOME/godot" "$HOME/.local/share/godot/export_templates/${GODOT_VERSION_DIR}"
+          if [ ! -x "$HOME/godot/godot" ]; then
+            curl -L -o /tmp/godot.zip \
+              "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+            unzip -q /tmp/godot.zip -d /tmp/godot_bin
+            GODOT_BIN=$(find /tmp/godot_bin -type f -name 'Godot*' | head -1)
+            cp "$GODOT_BIN" "$HOME/godot/godot"
+            chmod +x "$HOME/godot/godot"
+          fi
+          if [ ! -f "$HOME/.local/share/godot/export_templates/${GODOT_VERSION_DIR}/version.txt" ]; then
+            curl -L -o /tmp/templates.tpz \
+              "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+            unzip -q /tmp/templates.tpz -d /tmp/tpl
+            if [ -d /tmp/tpl/templates ]; then
+              cp -r /tmp/tpl/templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION_DIR}/"
+            else
+              find /tmp/tpl -type f -exec cp {} "$HOME/.local/share/godot/export_templates/${GODOT_VERSION_DIR}/" \;
+            fi
+            echo "${GODOT_VERSION}" > "$HOME/.local/share/godot/export_templates/${GODOT_VERSION_DIR}/version.txt"
+          fi
+          echo "Godot: $($HOME/godot/godot --version 2>/dev/null || true)"
+          ls "$HOME/.local/share/godot/export_templates/${GODOT_VERSION_DIR}/" | head
+
+      - name: Import project
+        run: |
+          $HOME/godot/godot --headless --path "$GITHUB_WORKSPACE" --import 2>&1 | tail -30 || true
+
+      - name: Export Windows
+        run: |
+          mkdir -p build
+          $HOME/godot/godot --headless --path "$GITHUB_WORKSPACE" \
+            --export-release "Windows Desktop" "$GITHUB_WORKSPACE/build/SayehaPars-Windows.exe" 2>&1
+          ls -lh build/ || (echo "EXPORT FAILED"; exit 1)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sayeha-windows-v11
+          path: build/
+          if-no-files-found: error
+
+  linux:
+    name: Linux export
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}-linux
+
+      - name: Install Godot + templates
+        run: |
+          set -e
+          mkdir -p "$HOME/godot" "$HOME/.local/share/godot/export_templates/${GODOT_VERSION_DIR}"
+          if [ ! -x "$HOME/godot/godot" ]; then
+            curl -L -o /tmp/godot.zip \
+              "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+            unzip -q /tmp/godot.zip -d /tmp/godot_bin
+            GODOT_BIN=$(find /tmp/godot_bin -type f -name 'Godot*' | head -1)
+            cp "$GODOT_BIN" "$HOME/godot/godot"
+            chmod +x "$HOME/godot/godot"
+          fi
+          if [ ! -f "$HOME/.local/share/godot/export_templates/${GODOT_VERSION_DIR}/version.txt" ]; then
+            curl -L -o /tmp/templates.tpz \
+              "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+            unzip -q /tmp/templates.tpz -d /tmp/tpl
+            if [ -d /tmp/tpl/templates ]; then
+              cp -r /tmp/tpl/templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION_DIR}/"
+            else
+              find /tmp/tpl -type f -exec cp {} "$HOME/.local/share/godot/export_templates/${GODOT_VERSION_DIR}/" \;
+            fi
+            echo "${GODOT_VERSION}" > "$HOME/.local/share/godot/export_templates/${GODOT_VERSION_DIR}/version.txt"
+          fi
+
+      - name: Import project
+        run: |
+          $HOME/godot/godot --headless --path "$GITHUB_WORKSPACE" --import 2>&1 | tail -20 || true
+
+      - name: Export Linux
+        run: |
+          mkdir -p build
+          $HOME/godot/godot --headless --path "$GITHUB_WORKSPACE" \
+            --export-release "Linux" "$GITHUB_WORKSPACE/build/SayehaPars-Linux.x86_64" 2>&1
+          chmod +x build/SayehaPars-Linux.x86_64 2>/dev/null || true
+          ls -lh build/ || (echo "EXPORT FAILED"; exit 1)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sayeha-linux-v11
+          path: build/
+          if-no-files-found: error
+
+  release:
+    name: Release assets
+    needs: [windows, linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: sayeha-windows-v11
+          path: dist/windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: sayeha-linux-v11
+          path: dist/linux
+      - name: Pack
+        run: |
+          (cd dist/windows && zip -r ../../SayehaPars-Windows.zip .)
+          (cd dist/linux && tar czf ../../SayehaPars-Linux.tar.gz .)
+          ls -lh SayehaPars-*
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            SayehaPars-Windows.zip
+            SayehaPars-Linux.tar.gz
+          generate_release_notes: true
+
   workflow_dispatch:
   release:
     types: [published]
