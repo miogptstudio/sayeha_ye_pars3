@@ -1,0 +1,40 @@
+═══════════════════════════════════════════
+  چطور این پروژه را روی GitHub بگذاری
+═══════════════════════════════════════════
+
+۱) در github.com یک Repository جدید بساز
+   نام پیشنهادی: sayeha-pars
+   Public باشد تا Actions رایگان کار کند
+   README را تیک نزن (خودمان داریم)
+
+۲) روی کامپیوتری که Git دارد (یا از GitHub Desktop):
+
+   cd sayeha_pars_godot
+   git init
+   git add .
+   git commit -m "Sayeha Pars Godot v11 — ready for Actions"
+   git branch -M main
+   git remote add origin https://github.com/USER/sayeha-pars.git
+   git push -u origin main
+
+   (USER را با نام کاربری خودت عوض کن)
+
+۳) برو به تب Actions
+   workflow به نام "Build Sayeha Pars" باید شروع شود
+   چند دقیقه صبر کن تا سبز شود
+
+۴) دانلود بازی:
+   Actions → روی build موفق کلیک → Artifacts
+   → sayeha-windows-v11 را دانلود کن
+
+۵) انتشار نسخه:
+   git tag v11.0.0
+   git push origin v11.0.0
+   در Releases فایل ویندوز/لینوکس ظاهر می‌شود
+
+
+اگر workflow خطا داد:
+- لاگ job ویندوز را باز کن
+- معمولاً مشکل از دانلود template است؛ دوباره Run workflow بزن
+- مطمئن شو export_presets.cfg داخل ریپو هست
+

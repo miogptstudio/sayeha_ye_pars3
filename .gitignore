@@ -1,0 +1,16 @@
+# Godot 4
+.godot/
+*.translation
+export/
+build/
+.import/
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+*.apk
+*.aab
+*.zip
+!docs/**
+.mono/
+data_*/

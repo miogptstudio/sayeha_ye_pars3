@@ -1,0 +1,178 @@
+[gd_scene load_steps=9 format=3 uid="uid://bq8sayeha_main"]
+
+[ext_resource type="Script" path="res://scripts/world_gen.gd" id="1_world"]
+[ext_resource type="Script" path="res://scripts/day_night.gd" id="2_day"]
+[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="4_player_scene"]
+[ext_resource type="Script" path="res://scripts/enemy_spawner.gd" id="5_spawner"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sky"]
+sky_top_color = Color(0.25, 0.45, 0.85, 1)
+sky_horizon_color = Color(0.55, 0.7, 0.9, 1)
+sky_curve = 0.12
+ground_bottom_color = Color(0.12, 0.14, 0.1, 1)
+ground_horizon_color = Color(0.4, 0.45, 0.35, 1)
+sun_angle_max = 30.0
+sun_curve = 0.15
+
+[sub_resource type="Sky" id="Sky_main"]
+sky_material = SubResource("ProceduralSkyMaterial_sky")
+
+[sub_resource type="Environment" id="Environment_main"]
+background_mode = 2
+sky = SubResource("Sky_main")
+ambient_light_source = 2
+ambient_light_color = Color(0.55, 0.6, 0.7, 1)
+ambient_light_energy = 0.25
+tonemap_mode = 3
+tonemap_exposure = 1.05
+tonemap_white = 1.0
+ssr_enabled = true
+ssr_max_steps = 64
+ssao_enabled = true
+ssao_radius = 1.2
+ssao_intensity = 1.8
+ssil_enabled = true
+sdfgi_enabled = true
+sdfgi_use_occlusion = true
+glow_enabled = true
+glow_intensity = 0.35
+glow_bloom = 0.15
+fog_enabled = true
+fog_light_color = Color(0.65, 0.75, 0.9, 1)
+fog_density = 0.0018
+fog_sky_affect = 0.4
+volumetric_fog_enabled = true
+volumetric_fog_density = 0.012
+volumetric_fog_albedo = Color(0.7, 0.78, 0.9, 1)
+adjustment_enabled = true
+adjustment_saturation = 1.08
+
+[node name="Main" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_main")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 40, 0)
+light_color = Color(1, 0.96, 0.88, 1)
+light_energy = 1.2
+light_angular_distance = 0.4
+shadow_enabled = true
+directional_shadow_mode = 1
+directional_shadow_split_1 = 0.12
+directional_shadow_split_2 = 0.35
+directional_shadow_split_3 = 0.6
+directional_shadow_blend_splits = true
+directional_shadow_max_distance = 180.0
+
+[node name="DayNight" type="Node" parent="."]
+script = ExtResource("2_day")
+
+[node name="World" type="Node3D" parent="." groups=["world"]]
+script = ExtResource("1_world")
+
+[node name="Terrain" type="Node3D" parent="World"]
+
+[node name="Objects" type="Node3D" parent="World"]
+
+[node name="Player" parent="." instance=ExtResource("4_player_scene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8, 0)
+
+[node name="EnemySpawner" type="Node3D" parent="."]
+script = ExtResource("5_spawner")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="HUD" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="HPBar" type="ProgressBar" parent="UI/HUD"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 280.0
+offset_bottom = 44.0
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="StaminaBar" type="ProgressBar" parent="UI/HUD"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 52.0
+offset_right = 280.0
+offset_bottom = 68.0
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="TimeLabel" type="Label" parent="UI/HUD"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 80.0
+offset_right = 320.0
+offset_bottom = 108.0
+theme_override_font_sizes/font_size = 18
+text = "روز — ۰۸:۰۰"
+
+[node name="GoldLabel" type="Label" parent="UI/HUD"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 112.0
+offset_right = 280.0
+offset_bottom = 136.0
+theme_override_font_sizes/font_size = 16
+text = "طلا: ۰ | سطح: ۱"
+
+[node name="QuestPanel" type="PanelContainer" parent="UI/HUD"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -340.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 140.0
+grow_horizontal = 0
+
+[node name="QuestVBox" type="VBoxContainer" parent="UI/HUD/QuestPanel"]
+layout_mode = 2
+
+[node name="QuestTitle" type="Label" parent="UI/HUD/QuestPanel/QuestVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "کوئست: آغاز سفر"
+
+[node name="QuestDesc" type="Label" parent="UI/HUD/QuestPanel/QuestVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "با کدخدا صحبت کن و مسیر را بیاموز."
+autowrap_mode = 2
+
+[node name="QuestProgress" type="Label" parent="UI/HUD/QuestPanel/QuestVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "پیشرفت: ۰ / ۱"
+
+[node name="HintLabel" type="Label" parent="UI/HUD"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -320.0
+offset_top = -48.0
+offset_right = 320.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 14
+text = "WASD حرکت | موس نگاه | کلیک چپ حمله | Space پرش | Shift دویدن | V دوربین | E تعامل | Esc منو"
+horizontal_alignment = 1
