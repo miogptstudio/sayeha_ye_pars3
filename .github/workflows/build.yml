@@ -1,0 +1,64 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Godot 4.3
+        run: |
+          mkdir -p "$HOME/godot-bin"
+          curl -fL -o /tmp/godot.zip \
+            "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip"
+          unzip -o /tmp/godot.zip -d /tmp/godot-extract
+          find /tmp/godot-extract -type f -executable -exec cp {} "$HOME/godot-bin/godot" \;
+          chmod +x "$HOME/godot-bin/godot"
+          "$HOME/godot-bin/godot" --version
+
+      - name: Download export templates
+        run: |
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
+          curl -fL -o /tmp/templates.tpz \
+            "https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz"
+          unzip -o /tmp/templates.tpz -d /tmp/templates-extract
+          if [ -d /tmp/templates-extract/templates ]; then
+            cp -r /tmp/templates-extract/templates/* "$HOME/.local/share/godot/export_templates/4.3.stable/"
+          else
+            cp -r /tmp/templates-extract/* "$HOME/.local/share/godot/export_templates/4.3.stable/" || true
+          fi
+          ls -la "$HOME/.local/share/godot/export_templates/4.3.stable/" | head -20
+
+      - name: Check project files
+        run: |
+          ls -la
+          test -f project.godot
+          test -f export_presets.cfg
+          test -f scenes/main.tscn
+          echo "Project OK"
+
+      - name: Import assets
+        run: |
+          "$HOME/godot-bin/godot" --headless --path "$GITHUB_WORKSPACE" --import || true
+
+      - name: Export Windows
+        run: |
+          mkdir -p build
+          "$HOME/godot-bin/godot" --headless --path "$GITHUB_WORKSPACE" \
+            --export-release "Windows Desktop" "$GITHUB_WORKSPACE/build/SayehaPars.exe"
+          ls -lh build/
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: sayeha-windows
+          path: build/
+          if-no-files-found: error
